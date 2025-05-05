@@ -1,165 +1,98 @@
-<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html><html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Círculo Armónico Interactivo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explorador Armónico</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .chord {
-      transition: transform 0.2s ease;
-      cursor: pointer;
-    }
-    .chord:hover {
-      transform: scale(1.2);
-    }
-    .highlight {
-      stroke: #22c55e;
-      stroke-width: 4px;
-    }
-    .arrow {
-      stroke: orange;
-      stroke-width: 2;
-      marker-end: url(#arrowhead);
-    }
-    .label {
-      pointer-events: none;
-      font-weight: bold;
-    }
+    .note { transition: transform 0.2s; }
+    .note:hover { transform: scale(1.1); cursor: pointer; }
+    .tónica { background-color: #4ade80; }
+    .subdominante { background-color: #60a5fa; }
+    .dominante { background-color: #f87171; }
   </style>
 </head>
-<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen p-4">
-  <h1 class="text-2xl md:text-4xl font-bold mb-4 text-center">Círculo Armónico Interactivo</h1>
-  <p class="text-center mb-6 max-w-xl text-sm md:text-base">
-    Haz clic en cualquier acorde para ver sus relaciones y progresiones armónicas: tónica, subdominante, dominante y relativos.
-  </p>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-4xl mx-auto p-4">
+    <header class="text-center mb-6">
+      <h1 class="text-4xl font-bold">Explorador Armónico</h1>
+      <p class="mt-2 text-lg">Aprende progresiones armónicas desde cero con visuales, sonidos y juegos interactivos</p>
+    </header><!-- Círculo de quintas interactivo -->
+<section class="bg-white shadow p-4 rounded mb-6">
+  <h2 class="text-2xl font-semibold mb-2">1. Círculo de Quintas Interactivo</h2>
+  <div id="circle" class="flex flex-wrap justify-center gap-2"></div>
+  <p class="text-sm mt-2 text-gray-600">Haz clic en una tonalidad para ver sus funciones armónicas y ejemplos.</p>
+</section>
 
-  <!-- Contenedor SVG del círculo -->
-  <div class="w-full max-w-4xl">
-    <svg id="circleSvg" viewBox="0 0 600 600" class="w-full h-auto mx-auto">
-      <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="orange" />
-        </marker>
-      </defs>
-    </svg>
-  </div>
+<!-- Teclado visual -->
+<section class="bg-white shadow p-4 rounded mb-6">
+  <h2 class="text-2xl font-semibold mb-2">2. Visualización en Teclado</h2>
+  <div id="keyboard" class="flex gap-1 overflow-auto"></div>
+  <p class="text-sm mt-2 text-gray-600">Los acordes se mostrarán en el teclado. Colores: tónica (verde), subdominante (azul), dominante (rojo).</p>
+</section>
 
-  <!-- Área de información -->
-  <div id="infoBox" class="bg-gray-900 rounded-xl mt-6 p-4 w-full max-w-xl text-center border border-gray-700">
-    <p class="text-lg font-semibold mb-2">Selecciona un acorde para ver su función.</p>
-    <div id="infoContent" class="text-sm"></div>
-  </div>
+<!-- Constructor de progresiones -->
+<section class="bg-white shadow p-4 rounded mb-6">
+  <h2 class="text-2xl font-semibold mb-2">3. Constructor de Progresiones</h2>
+  <div class="flex gap-2 flex-wrap mb-2" id="progression-builder"></div>
+  <button onclick="playProgression()" class="bg-blue-500 text-white px-4 py-2 rounded">Reproducir progresión</button>
+</section>
 
-  <script>
-    const chords = [
-      'C','G','D','A','E','B','F#','Db','Ab','Eb','Bb','F'
-    ];
-    const svg = document.getElementById("circleSvg");
-    const infoContent = document.getElementById("infoContent");
-    const cx = 300, cy = 300, r = 220;
-    let chordPositions = {};
+<!-- Ruta de aprendizaje -->
+<section class="bg-white shadow p-4 rounded mb-6">
+  <h2 class="text-2xl font-semibold mb-2">4. Ruta de Aprendizaje</h2>
+  <ol class="list-decimal ml-4">
+    <li>Introducción a funciones armónicas con metáforas.</li>
+    <li>Progresiones básicas (I-IV-V-I).</li>
+    <li>Estilos musicales: pop, blues, flamenco, etc.</li>
+    <li>Sustituciones y acordes relativos.</li>
+    <li>Ear training: identifica la función de cada acorde.</li>
+    <li>Pizarra libre con IA para reharmonización y exportación MIDI.</li>
+  </ol>
+</section>
 
-    const relations = {
-      'C': { dom: 'G7', rel: 'Am', sub: 'F', prog: ['F', 'G', 'Am', 'Dm'] },
-      'G': { dom: 'D7', rel: 'Em', sub: 'C', prog: ['C', 'D', 'Em', 'Am'] },
-      'D': { dom: 'A7', rel: 'Bm', sub: 'G', prog: ['G', 'A', 'Bm', 'Em'] },
-      'A': { dom: 'E7', rel: 'F#m', sub: 'D', prog: ['D', 'E', 'F#m', 'Bm'] },
-      'E': { dom: 'B7', rel: 'G#m', sub: 'A', prog: ['A', 'B', 'C#m', 'F#m'] },
-      'B': { dom: 'F#7', rel: 'D#m', sub: 'E', prog: ['E', 'F#', 'G#m', 'C#m'] },
-      'F#': { dom: 'C#7', rel: 'Ebm', sub: 'B', prog: ['B', 'C#', 'D#m', 'G#m'] },
-      'Db': { dom: 'Ab7', rel: 'Bbm', sub: 'F#', prog: ['F#', 'Ab', 'Bbm', 'Ebm'] },
-      'Ab': { dom: 'Eb7', rel: 'Fm', sub: 'Db', prog: ['Db', 'Eb', 'Fm', 'Bbm'] },
-      'Eb': { dom: 'Bb7', rel: 'Cm', sub: 'Ab', prog: ['Ab', 'Bb', 'Cm', 'Fm'] },
-      'Bb': { dom: 'F7', rel: 'Gm', sub: 'Eb', prog: ['Eb', 'F', 'Gm', 'Cm'] },
-      'F': { dom: 'C7', rel: 'Dm', sub: 'Bb', prog: ['Bb', 'C', 'Dm', 'Gm'] }
+  </div>  <script>
+    const tonalidades = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'];
+    const funciones = {
+      'C': { tónica: 'C', subdominante: 'F', dominante: 'G' },
+      'G': { tónica: 'G', subdominante: 'C', dominante: 'D' },
+      // Se puede completar para otras tonalidades
     };
 
-    function renderCircle() {
-      chords.forEach((label, i) => {
-        const angle = (i / chords.length) * 2 * Math.PI - Math.PI / 2;
-        const x = cx + r * Math.cos(angle);
-        const y = cy + r * Math.sin(angle);
-        chordPositions[label] = { x, y };
+    tonalidades.forEach(tone => {
+      const btn = document.createElement('button');
+      btn.textContent = tone;
+      btn.className = 'note p-2 rounded shadow bg-yellow-100';
+      btn.onclick = () => mostrarFuncion(tone);
+      document.getElementById('circle').appendChild(btn);
+    });
 
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute("cx", x);
-        circle.setAttribute("cy", y);
-        circle.setAttribute("r", 28);
-        circle.setAttribute("fill", "#1f2937");
-        circle.setAttribute("stroke", "#ffffff");
-        circle.setAttribute("stroke-width", "2");
-        circle.classList.add("chord");
-        circle.dataset.label = label;
-        svg.appendChild(circle);
+    function mostrarFuncion(tone) {
+      const keyboard = document.getElementById('keyboard');
+      keyboard.innerHTML = '';
+      const f = funciones[tone];
+      if (!f) return;
 
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", x);
-        text.setAttribute("y", y + 5);
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("font-size", "16");
-        text.setAttribute("fill", "#fff");
-        text.classList.add("label");
-        text.textContent = label;
-        svg.appendChild(text);
-
-        circle.addEventListener("click", () => showRelations(label));
+      ['tónica', 'subdominante', 'dominante'].forEach(fn => {
+        const div = document.createElement('div');
+        div.textContent = f[fn];
+        div.className = fn + ' px-4 py-2 rounded text-white';
+        div.onclick = () => agregarAcorde(f[fn]);
+        keyboard.appendChild(div);
       });
     }
 
-    function drawArrow(from, to) {
-      const x1 = chordPositions[from]?.x, y1 = chordPositions[from]?.y;
-      const x2 = chordPositions[to]?.x, y2 = chordPositions[to]?.y;
-      if (!x1 || !x2) return;
-
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", x1);
-      line.setAttribute("y1", y1);
-      line.setAttribute("x2", x2);
-      line.setAttribute("y2", y2);
-      line.classList.add("arrow");
-      svg.appendChild(line);
+    function agregarAcorde(acorde) {
+      const cont = document.getElementById('progression-builder');
+      const span = document.createElement('span');
+      span.textContent = acorde;
+      span.className = 'px-3 py-1 bg-gray-200 rounded';
+      cont.appendChild(span);
     }
 
-    function clearArrows() {
-      const arrows = svg.querySelectorAll(".arrow");
-      arrows.forEach(e => e.remove());
+    function playProgression() {
+      const acordes = Array.from(document.querySelectorAll('#progression-builder span')).map(e => e.textContent);
+      alert('Reproduciendo: ' + acordes.join(' - ')); // Aquí se puede integrar MIDI o Web Audio
     }
-
-    function highlightChord(label, color = "#22c55e") {
-      const circle = [...svg.querySelectorAll("circle")].find(c => c.dataset.label === label);
-      if (circle) circle.setAttribute("stroke", color);
-    }
-
-    function resetHighlights() {
-      svg.querySelectorAll("circle").forEach(c => c.setAttribute("stroke", "#ffffff"));
-    }
-
-    function showRelations(label) {
-      resetHighlights();
-      clearArrows();
-      const r = relations[label];
-      if (!r) return;
-
-      highlightChord(label, "#22c55e");
-      highlightChord(r.dom?.replace("7", ""), "#facc15");
-      highlightChord(r.sub, "#3b82f6");
-      highlightChord(r.rel, "#ec4899");
-
-      infoContent.innerHTML = `
-        <p><strong>Tónica:</strong> ${label}</p>
-        <p><strong>Dominante (V7):</strong> ${r.dom}</p>
-        <p><strong>Subdominante:</strong> ${r.sub}</p>
-        <p><strong>Relativa menor:</strong> ${r.rel}</p>
-        <p class="mt-2 text-green-400"><strong>Progresión sugerida:</strong> ${r.prog.join(' → ')}</p>
-      `;
-
-      for (let i = 0; i < r.prog.length - 1; i++) {
-        drawArrow(r.prog[i], r.prog[i + 1]);
-      }
-    }
-
-    renderCircle();
-  </script>
-</body>
+  </script></body>
 </html>
