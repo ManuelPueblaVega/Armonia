@@ -1,0 +1,188 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel de Armonía Musical</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .chord-node {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .chord-node:hover {
+      transform: scale(1.1);
+    }
+    .arrow {
+      stroke: #999;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+    .highlight {
+      stroke: red;
+      stroke-width: 3;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center p-4 min-h-screen">
+  <h1 class="text-2xl md:text-4xl font-bold mb-4 text-center">Círculo Interactivo de Armonía</h1>
+  <p class="mb-6 text-center max-w-xl text-sm text-gray-300">
+    Toca cualquier acorde para ver sus relaciones armónicas. Explora sonidos, escalas y progresiones.
+  </p>  <div class="flex gap-4 mb-4">
+    <button onclick="playChord()" class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded">Escuchar Acorde</button>
+    <button onclick="showProgressions()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Progresiones</button>
+    <button onclick="showScales()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded">Escalas</button>
+  </div>  <svg id="circle" class="w-full max-w-4xl h-[80vh]" viewBox="0 0 800 800">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+        refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#ccc"/>
+      </marker>
+    </defs>
+  </svg>  <div id="info" class="text-sm text-gray-200 mt-6"></div>  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1);
+    }
+
+    function playChord(name) {
+      if (!name) return;
+      const baseFreq = chordFreqs[name];
+      if (!baseFreq) return;
+      [0, 4, 7].forEach(i => playTone(baseFreq * Math.pow(2, i / 12)));
+    }
+
+    function showProgressions() {
+      document.getElementById("info").innerHTML = `Ejemplo I-IV-V-I: C - F - G - C<br>ii-V-I: Dm - G7 - C`;
+    }
+
+    function showScales() {
+      document.getElementById("info").innerHTML = `Escala de C mayor: C - D - E - F - G - A - B`;
+    }
+
+    const chordFreqs = {
+      "C": 261.63,
+      "G": 392.00,
+      "D": 293.66,
+      "A": 440.00,
+      "E": 329.63,
+      "B": 493.88,
+      "F#": 370.00,
+      "Db": 277.18,
+      "Ab": 415.30,
+      "Eb": 311.13,
+      "Bb": 466.16,
+      "F": 349.23
+    };
+
+    const chords = [
+      { name: "C", type: "major" },
+      { name: "G", type: "major" },
+      { name: "D", type: "major" },
+      { name: "A", type: "major" },
+      { name: "E", type: "major" },
+      { name: "B", type: "major" },
+      { name: "F#", type: "major" },
+      { name: "Db", type: "major" },
+      { name: "Ab", type: "major" },
+      { name: "Eb", type: "major" },
+      { name: "Bb", type: "major" },
+      { name: "F", type: "major" },
+      { name: "Am", type: "minor" },
+      { name: "Em", type: "minor" },
+      { name: "Bm", type: "minor" },
+      { name: "F#m", type: "minor" },
+      { name: "C#m", type: "minor" },
+      { name: "G#m", type: "minor" },
+      { name: "Ebm", type: "minor" },
+      { name: "Bbm", type: "minor" },
+      { name: "Fm", type: "minor" },
+      { name: "Cm", type: "minor" },
+      { name: "Gm", type: "minor" },
+      { name: "Dm", type: "minor" },
+      { name: "G7", from: "C" },
+      { name: "D7", from: "G" },
+      { name: "A7", from: "D" },
+      { name: "E7", from: "A" },
+      { name: "B7", from: "E" },
+      { name: "F#7", from: "B" },
+      { name: "C#7", from: "F#" },
+      { name: "Ab7", from: "Db" },
+      { name: "Eb7", from: "Ab" },
+      { name: "Bb7", from: "Eb" },
+      { name: "F7", from: "Bb" },
+      { name: "C7", from: "F" },
+    ];
+
+    const svg = document.getElementById("circle");
+    const center = { x: 400, y: 400 };
+    const radius = 300;
+
+    function getPosition(i, total) {
+      const angle = (2 * Math.PI / total) * i - Math.PI / 2;
+      return {
+        x: center.x + radius * Math.cos(angle),
+        y: center.y + radius * Math.sin(angle)
+      };
+    }
+
+    const nodes = {};
+    const allChords = chords.filter(c => !c.from);
+    allChords.forEach((chord, i) => {
+      const pos = getPosition(i, allChords.length);
+      const color = chord.type === "major" ? "#f472b6" : "#38bdf8";
+      const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      group.setAttribute("class", "chord-node");
+      group.setAttribute("data-name", chord.name);
+      group.innerHTML = `
+        <circle cx="${pos.x}" cy="${pos.y}" r="25" fill="${color}" />
+        <text x="${pos.x}" y="${pos.y + 5}" font-size="16" text-anchor="middle" fill="white">${chord.name}</text>
+      `;
+      svg.appendChild(group);
+      nodes[chord.name] = pos;
+    });
+
+    chords.filter(c => c.from).forEach(chord => {
+      const from = nodes[chord.from];
+      const to = nodes[chord.name.replace("7", "")];
+      if (from && to) {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", from.x);
+        line.setAttribute("y1", from.y);
+        line.setAttribute("x2", to.x);
+        line.setAttribute("y2", to.y);
+        line.setAttribute("class", "arrow");
+        svg.insertBefore(line, svg.firstChild);
+      }
+    });
+
+    document.querySelectorAll(".chord-node").forEach(node => {
+      node.addEventListener("click", () => {
+        document.querySelectorAll(".arrow").forEach(a => a.classList.remove("highlight"));
+        const name = node.getAttribute("data-name");
+        playChord(name);
+        chords.filter(c => c.from === name).forEach(c => {
+          const lines = [...svg.querySelectorAll("line")];
+          lines.forEach(line => {
+            if (
+              parseFloat(line.getAttribute("x1")) === nodes[c.from].x &&
+              parseFloat(line.getAttribute("y1")) === nodes[c.from].y &&
+              parseFloat(line.getAttribute("x2")) === nodes[c.name.replace("7", "")].x &&
+              parseFloat(line.getAttribute("y2")) === nodes[c.name.replace("7", "")].y
+            ) {
+              line.classList.add("highlight");
+            }
+          });
+        });
+      });
+    });
+  </script></body>
+</html>
