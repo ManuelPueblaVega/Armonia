@@ -2,92 +2,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Explorador Armónico</title>
+  <title>Explorador Armónico Macro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .note { transition: transform 0.2s; }
-    .note:hover { transform: scale(1.1); cursor: pointer; }
-    .tónica { background-color: #4ade80; }
-    .subdominante { background-color: #60a5fa; }
-    .dominante { background-color: #f87171; }
+    body { background-color: #0f172a; color: white; }
+    .circle { position: relative; width: 500px; height: 500px; margin: auto; }
+    .chord {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      transition: transform 0.3s, filter 0.3s;
+    }
+    .chord:hover {
+      transform: translate(-50%, -50%) scale(1.15);
+      filter: brightness(1.2);
+      z-index: 10;
+    }
+    .line {
+      stroke: #94a3b8;
+      stroke-width: 1.5;
+      opacity: 0.5;
+    }
+    .focus circle {
+      filter: drop-shadow(0 0 10px white);
+    }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-  <div class="max-w-4xl mx-auto p-4">
-    <header class="text-center mb-6">
-      <h1 class="text-4xl font-bold">Explorador Armónico</h1>
-      <p class="mt-2 text-lg">Visualiza y escucha cómo los acordes se conectan y transforman dentro del círculo de quintas.</p>
-    </header><!-- Círculo de quintas interactivo -->
-<section class="bg-white shadow p-4 rounded mb-6">
-  <h2 class="text-2xl font-semibold mb-2">1. Círculo de Quintas Interactivo</h2>
-  <p class="mb-2 text-gray-700">Haz clic en una tonalidad para descubrir sus funciones armónicas. Cada acorde es como un personaje en una historia musical: <strong>la tónica</strong> es el hogar, <strong>la subdominante</strong> es el viaje, y <strong>la dominante</strong> es la tensión antes de regresar.</p>
-  <div id="circle" class="flex flex-wrap justify-center gap-2"></div>
-</section>
-
-<!-- Visualización en Teclado -->
-<section class="bg-white shadow p-4 rounded mb-6">
-  <h2 class="text-2xl font-semibold mb-2">2. Visualización de Funciones Armónicas</h2>
-  <p class="mb-4 text-gray-700">Haz clic sobre un acorde para escucharlo y entender su papel dentro de la tonalidad. Colores: <span class="font-bold text-green-600">Tónica (descanso)</span>, <span class="font-bold text-blue-600">Subdominante (transición)</span>, <span class="font-bold text-red-600">Dominante (tensión)</span>.</p>
-  <div id="keyboard" class="flex gap-2 flex-wrap justify-center"></div>
-</section>
-
+<body>
+  <div class="text-center py-6">
+    <h1 class="text-4xl font-bold mb-2">Mapa Interactivo de Funciones Armónicas</h1>
+    <p class="text-lg text-slate-300">Explora las conexiones entre acordes en un círculo macro visual. Haz clic en un acorde para enfocarlo.</p>
+  </div>
+  <div class="flex justify-center">
+    <svg id="network" viewBox="0 0 600 600" width="600" height="600"></svg>
   </div>  <script>
-    const tonalidades = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'];
-    const funciones = {
-      'C': { tónica: 'C', subdominante: 'F', dominante: 'G' },
-      'G': { tónica: 'G', subdominante: 'C', dominante: 'D' },
-      'D': { tónica: 'D', subdominante: 'G', dominante: 'A' },
-      'A': { tónica: 'A', subdominante: 'D', dominante: 'E' },
-      'E': { tónica: 'E', subdominante: 'A', dominante: 'B' },
-      'B': { tónica: 'B', subdominante: 'E', dominante: 'F#' },
-      'F#': { tónica: 'F#', subdominante: 'B', dominante: 'C#' },
-      'Db': { tónica: 'Db', subdominante: 'Gb', dominante: 'Ab' },
-      'Ab': { tónica: 'Ab', subdominante: 'Db', dominante: 'Eb' },
-      'Eb': { tónica: 'Eb', subdominante: 'Ab', dominante: 'Bb' },
-      'Bb': { tónica: 'Bb', subdominante: 'Eb', dominante: 'F' },
-      'F': { tónica: 'F', subdominante: 'Bb', dominante: 'C' }
-    };
+    const svg = document.getElementById("network");
+    const center = 300;
+    const radius = 220;
+    const chords = [
+      { name: "C", type: "maj" }, { name: "G", type: "maj" }, { name: "D", type: "maj" },
+      { name: "A", type: "maj" }, { name: "E", type: "maj" }, { name: "B", type: "maj" },
+      { name: "F#", type: "maj" }, { name: "Db", type: "maj" }, { name: "Ab", type: "maj" },
+      { name: "Eb", type: "maj" }, { name: "Bb", type: "maj" }, { name: "F", type: "maj" }
+    ];
 
-    const notasFrecuencia = {
-      'C': 261.63, 'C#': 277.18, 'Db': 277.18, 'D': 293.66, 'Eb': 311.13, 'E': 329.63,
-      'F': 349.23, 'F#': 369.99, 'Gb': 369.99, 'G': 392.00, 'Ab': 415.30,
-      'A': 440.00, 'Bb': 466.16, 'B': 493.88
-    };
+    const relations = [
+      ["C", "G"], ["C", "F"], ["C", "Am"], ["C", "G7"],
+      ["G", "D"], ["D", "A"], ["A", "E"], ["E", "B"], ["B", "F#"],
+      ["F#", "Db"], ["Db", "Ab"], ["Ab", "Eb"], ["Eb", "Bb"], ["Bb", "F"],
+      ["F", "C"]
+    ];
 
-    tonalidades.forEach(tone => {
-      const btn = document.createElement('button');
-      btn.textContent = tone;
-      btn.className = 'note p-3 rounded-full shadow bg-yellow-100 text-lg font-bold';
-      btn.onclick = () => mostrarFuncion(tone);
-      document.getElementById('circle').appendChild(btn);
+    const angleStep = (2 * Math.PI) / chords.length;
+    const positions = {};
+
+    chords.forEach((chord, i) => {
+      const angle = angleStep * i - Math.PI / 2;
+      const x = center + radius * Math.cos(angle);
+      const y = center + radius * Math.sin(angle);
+      positions[chord.name] = { x, y };
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "chord-group");
+      g.setAttribute("transform", `translate(${x},${y})`);
+      g.innerHTML = `
+        <circle r="20" fill="#1e293b" stroke="white" stroke-width="2" />
+        <text x="0" y="5" text-anchor="middle" fill="white" font-size="16" font-family="sans-serif">${chord.name}</text>
+      `;
+      g.style.cursor = "pointer";
+      g.onclick = () => enfocar(chord.name);
+      svg.appendChild(g);
     });
 
-    function mostrarFuncion(tone) {
-      const keyboard = document.getElementById('keyboard');
-      keyboard.innerHTML = '';
-      const f = funciones[tone];
-      if (!f) return;
+    relations.forEach(([a, b]) => {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", positions[a].x);
+      line.setAttribute("y1", positions[a].y);
+      line.setAttribute("x2", positions[b].x);
+      line.setAttribute("y2", positions[b].y);
+      line.setAttribute("class", "line");
+      svg.insertBefore(line, svg.firstChild);
+    });
 
-      Object.entries(f).forEach(([fn, nota]) => {
-        const div = document.createElement('div');
-        div.textContent = `${nota} (${fn})`;
-        div.className = fn + ' px-4 py-2 rounded text-white shadow text-lg hover:scale-105 cursor-pointer';
-        div.onclick = () => reproducirNota(nota);
-        keyboard.appendChild(div);
+    function enfocar(nombre) {
+      const grupos = svg.querySelectorAll(".chord-group");
+      grupos.forEach(g => {
+        const txt = g.querySelector("text").textContent;
+        if (txt === nombre) {
+          g.classList.add("focus");
+          g.setAttribute("transform", `translate(${positions[nombre].x},${positions[nombre].y}) scale(1.2)`);
+        } else {
+          g.classList.remove("focus");
+          g.setAttribute("transform", `translate(${positions[txt]?.x || 0},${positions[txt]?.y || 0}) scale(0.8)`);
+        }
       });
-    }
-
-    function reproducirNota(nota) {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.value = notasFrecuencia[nota] || 440;
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1);
-      o.stop(ctx.currentTime + 1);
     }
   </script></body>
 </html>
