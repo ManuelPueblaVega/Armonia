@@ -1,147 +1,113 @@
 <!DOCTYPE html><html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa Armónico Avanzado</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa Armónico Visual</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #0f172a; color: white; }
-    .line { stroke: #94a3b8; stroke-width: 1.2; opacity: 0.5; marker-end: url(#arrow); }
-    .focus circle { filter: drop-shadow(0 0 10px #22d3ee); }
-    .active circle { fill: #22d3ee !important; }
+    .line { stroke: #94a3b8; stroke-width: 1.2; opacity: 0.6; marker-end: url(#arrow); }
+    .circle-maj { fill: #be123c; }
+    .circle-dom { fill: #facc15; }
+    .circle-min { fill: #0891b2; }
+    .chord:hover circle { stroke: #f0f9ff; stroke-width: 3; }
+    .chord text { font-size: 12px; font-family: sans-serif; fill: white; }
   </style>
 </head>
 <body>
   <div class="text-center py-6">
-    <h1 class="text-4xl font-bold mb-2">Mapa Armónico Avanzado</h1>
-    <p class="text-lg text-slate-300">Explora rutas de progresión armónica. Haz clic en un acorde para ver sus caminos posibles.</p>
+    <h1 class="text-3xl font-bold mb-2">Mapa Armónico Visual</h1>
+    <p class="text-slate-300 max-w-xl mx-auto">Haz clic en cualquier acorde para ver su red de relaciones armónicas: relativos menores, dominantes secundarios y tónicas relacionadas.</p>
   </div>
   <div class="flex justify-center">
-    <svg id="network" viewBox="0 0 800 800" width="800" height="800"></svg>
-  </div>
-  <div class="text-center mt-4">
-    <button onclick="reproducirProgresion()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Reproducir Progresión</button>
-    <button onclick="limpiarProgresion()" class="ml-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Limpiar</button>
-    <div id="progresion" class="mt-2 text-slate-300"></div>
+    <svg id="circleNetwork" viewBox="0 0 800 800" width="800" height="800"></svg>
   </div>  <script>
-    const svg = document.getElementById("network");
+    const svg = document.getElementById("circleNetwork");
     const center = 400;
     const outerRadius = 300;
-    const innerRadius = 200;
-    const outerChords = ["Am", "Em", "Bm", "F#m", "C#m", "G#m", "Ebm", "Bbm", "Fm", "Cm", "Gm", "Dm"];
-    const innerChords = ["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"];
-    const relaciones = {
-      "C": ["Am", "F", "G", "G7"], "G": ["Em", "C", "D"], "D": ["Bm", "G", "A"],
-      "A": ["F#m", "D", "E"], "E": ["C#m", "A", "B"], "B": ["G#m", "E", "F#"],
-      "F#": ["D#m", "B", "Db"], "Db": ["Bbm", "F#", "Ab"], "Ab": ["Fm", "Db", "Eb"],
-      "Eb": ["Cm", "Ab", "Bb"], "Bb": ["Gm", "Eb", "F"], "F": ["Dm", "Bb", "C"]
-    };
+    const innerRadius = 220;
+    const chordsOuter = ["Cm", "Gm", "Dm", "Am", "Em", "Bm", "F#m", "C#m", "G#m", "Ebm", "Bbm", "Fm"];
+    const chordsInner = ["C", "G", "D", "A", "E", "B", "F#", "C#7", "F#7", "B7", "E7", "A7"];
 
-    const notasFrecuencia = {
-      'C': 261.63, 'C#': 277.18, 'Db': 277.18, 'D': 293.66, 'Eb': 311.13, 'E': 329.63,
-      'F': 349.23, 'F#': 369.99, 'G': 392.00, 'Ab': 415.30, 'A': 440.00, 'Bb': 466.16, 'B': 493.88,
-      'Cm': 261.63, 'Dm': 293.66, 'Em': 329.63, 'Fm': 349.23, 'Gm': 392.00, 'Am': 440.00, 'Bm': 493.88,
-      'F#m': 369.99, 'C#m': 277.18, 'G#m': 415.30, 'Ebm': 311.13, 'Bbm': 466.16, 'D#m': 311.13
-    };
+    const relationships = [
+      ["Cm", "G7"], ["Fm", "C7"], ["Bbm", "F7"], ["Ebm", "Bb7"], ["Abm", "Eb7"],
+      ["Dbm", "Ab7"], ["F#m", "C#7"], ["Bm", "F#7"], ["Em", "B7"], ["Am", "E7"], ["Dm", "A7"],
+      ["Gm", "D7"], ["C", "G7"], ["C", "Am"], ["C", "F"],
+      ["G", "Em"], ["G", "C"], ["D", "Bm"], ["A", "F#m"], ["E", "C#m"],
+      ["B", "G#m"], ["F#", "D#m"], ["Db", "Bbm"], ["Ab", "Fm"], ["Eb", "Cm"], ["Bb", "Gm"], ["F", "Dm"]
+    ];
 
-    const progresion = [];
     const posiciones = {};
 
-    function crearRed() {
-      const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-      marker.setAttribute("id", "arrow");
-      marker.setAttribute("viewBox", "0 0 10 10");
-      marker.setAttribute("refX", "5");
-      marker.setAttribute("refY", "5");
-      marker.setAttribute("markerWidth", "5");
-      marker.setAttribute("markerHeight", "5");
-      marker.setAttribute("orient", "auto-start-reverse");
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
-      path.setAttribute("fill", "#94a3b8");
-      marker.appendChild(path);
-      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-      defs.appendChild(marker);
-      svg.appendChild(defs);
+    const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    marker.setAttribute("id", "arrow");
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("refX", "5");
+    marker.setAttribute("refY", "5");
+    marker.setAttribute("markerWidth", "5");
+    marker.setAttribute("markerHeight", "5");
+    marker.setAttribute("orient", "auto-start-reverse");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    path.setAttribute("fill", "#94a3b8");
+    marker.appendChild(path);
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.appendChild(marker);
+    svg.appendChild(defs);
 
-      [...outerChords, ...innerChords].forEach((chord, i) => {
-        const r = outerChords.includes(chord) ? outerRadius : innerRadius;
-        const index = outerChords.includes(chord) ? outerChords.indexOf(chord) : innerChords.indexOf(chord);
-        const angle = ((2 * Math.PI) / 12) * index - Math.PI / 2;
-        const x = center + r * Math.cos(angle);
-        const y = center + r * Math.sin(angle);
-        posiciones[chord] = { x, y };
+    function crearAcordes(lista, radio, clase) {
+      lista.forEach((acorde, i) => {
+        const angle = ((2 * Math.PI) / 12) * i - Math.PI / 2;
+        const x = center + radio * Math.cos(angle);
+        const y = center + radio * Math.sin(angle);
+        posiciones[acorde] = { x, y };
 
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.setAttribute("class", "chord-group");
-        g.setAttribute("transform", `translate(${x},${y})`);
-        g.innerHTML = `
-          <circle r="20" fill="#1e293b" stroke="white" stroke-width="2" />
-          <text x="0" y="5" text-anchor="middle" fill="white" font-size="16" font-family="sans-serif">${chord}</text>
+        const grupo = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        grupo.setAttribute("class", "chord");
+        grupo.setAttribute("transform", `translate(${x},${y})`);
+        grupo.innerHTML = `
+          <circle r="20" class="${clase}" stroke="white" stroke-width="1.5" />
+          <text text-anchor="middle" y="5">${acorde}</text>
         `;
-        g.style.cursor = "pointer";
-        g.onclick = () => seleccionarAcorde(chord);
-        svg.appendChild(g);
-      });
-
-      Object.entries(relaciones).forEach(([origen, destinos]) => {
-        destinos.forEach(dest => {
-          const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          l.setAttribute("x1", posiciones[origen].x);
-          l.setAttribute("y1", posiciones[origen].y);
-          l.setAttribute("x2", posiciones[dest]?.x || 0);
-          l.setAttribute("y2", posiciones[dest]?.y || 0);
-          l.setAttribute("class", "line");
-          svg.insertBefore(l, svg.firstChild);
-        });
+        grupo.onclick = () => resaltarRelaciones(acorde);
+        svg.appendChild(grupo);
       });
     }
 
-    function seleccionarAcorde(nombre) {
-      const grupos = svg.querySelectorAll(".chord-group");
-      grupos.forEach(g => {
-        const txt = g.querySelector("text").textContent;
-        if (txt === nombre) {
-          g.classList.add("focus");
-        } else {
-          g.classList.remove("focus");
+    function dibujarFlechas() {
+      relationships.forEach(([a, b]) => {
+        if (posiciones[a] && posiciones[b]) {
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", posiciones[a].x);
+          line.setAttribute("y1", posiciones[a].y);
+          line.setAttribute("x2", posiciones[b].x);
+          line.setAttribute("y2", posiciones[b].y);
+          line.setAttribute("class", "line");
+          svg.insertBefore(line, svg.firstChild);
         }
       });
-      reproducirNota(nombre);
-      agregarAProgresion(nombre);
     }
 
-    function reproducirNota(nota) {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.value = notasFrecuencia[nota] || 440;
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1);
-      o.stop(ctx.currentTime + 1);
-    }
+    function resaltarRelaciones(base) {
+      const all = svg.querySelectorAll(".chord circle");
+      all.forEach(c => c.setAttribute("stroke", "white"));
 
-    function agregarAProgresion(nota) {
-      progresion.push(nota);
-      document.getElementById("progresion").textContent = "Progresión: " + progresion.join(" - ");
-    }
-
-    function reproducirProgresion() {
-      let delay = 0;
-      progresion.forEach((nota, i) => {
-        setTimeout(() => reproducirNota(nota), delay);
-        delay += 1000;
+      relationships.forEach(([a, b]) => {
+        if (a === base) {
+          const related = svg.querySelectorAll(`.chord text`);
+          related.forEach(t => {
+            if (t.textContent === b) {
+              const circle = t.parentElement.querySelector("circle");
+              circle.setAttribute("stroke", "#0ea5e9");
+              circle.setAttribute("stroke-width", "3");
+            }
+          });
+        }
       });
     }
 
-    function limpiarProgresion() {
-      progresion.length = 0;
-      document.getElementById("progresion").textContent = "";
-    }
-
-    crearRed();
+    crearAcordes(chordsInner, innerRadius, "circle-dom");
+    crearAcordes(chordsOuter, outerRadius, "circle-min");
+    dibujarFlechas();
   </script></body>
 </html>
