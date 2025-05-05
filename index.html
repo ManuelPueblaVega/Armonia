@@ -1,57 +1,118 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Panel de Armonía Musical - Illustrated Harmony</title>
+  <title>Estudio de Armonía - Círculo Interactivo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .chord-node {
-      cursor: pointer;
+    .chord {
       transition: transform 0.2s ease;
     }
-    .chord-node:hover {
-      transform: scale(1.1);
-    }
-    .arrow {
-      stroke: #999;
-      stroke-width: 2;
-      marker-end: url(#arrowhead);
+    .chord:hover {
+      transform: scale(1.2);
+      cursor: pointer;
     }
     .highlight {
-      stroke: red;
-      stroke-width: 3;
-    }
-    .tooltip {
-      position: absolute;
-      background-color: #1f2937;
-      color: white;
-      padding: 0.5rem;
-      border-radius: 0.375rem;
-      font-size: 0.875rem;
-      display: none;
-      pointer-events: none;
+      stroke: lime;
+      stroke-width: 4px;
     }
   </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center p-4 min-h-screen">
-  <h1 class="text-3xl md:text-4xl font-bold mb-2 text-center">Illustrated Harmony</h1>
-  <p class="text-pink-400 font-medium mb-4 text-center">¡50% de descuento por preorden exclusiva!</p>  <div class="bg-gray-800 p-4 rounded-lg shadow max-w-xl text-sm text-gray-200 mb-6">
-    <p class="mb-2">Este panel interactivo acompaña al libro <strong>"Illustrated Harmony"</strong>, una guía visual para comprender progresiones y modulaciones con ayuda del círculo de quintas.</p>
-    <p class="mb-2">Incluye ejercicios prácticos, explicaciones visuales y sonidos para explorar funciones armónicas y modos.</p>
-    <p class="mb-2">Al reservar tu copia ayudas a completar la primera edición del libro, en formato PDF, con entrega estimada el <strong>31 de mayo</strong>.</p>
-    <p class="mb-2">Ve a <a href="https://patreon.com/BrianCalliMusic" class="text-blue-400 underline">patreon.com/BrianCalliMusic</a>, sección Tienda, y busca "Pre-Order: Illustrated Composition Book".</p>
-    <p>Después de la compra, envía un mensaje con la captura del recibo y tu correo para recibir el PDF.</p>
-  </div>  <!-- Aquí va el resto del contenido generado previamente -->  <div class="flex flex-wrap gap-4 justify-center mb-4">
-    <button onclick="showProgressions()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded shadow">Progresiones comunes</button>
-    <button onclick="showScales()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded shadow">Escalas Mayores</button>
-    <button onclick="showModes()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded shadow">Modos Griegos</button>
-    <button onclick="clearInfo()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded shadow">Limpiar</button>
-  </div>  <svg id="circle" class="w-full max-w-4xl h-[80vh]" viewBox="0 0 800 800">
-    <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#ccc"/>
-      </marker>
-    </defs>
-  </svg>  <div id="info" class="text-sm text-gray-200 mt-6 text-center"></div>
-  <div id="tooltip" class="tooltip"></div>  <!-- JavaScript sigue igual -->  <!-- Aquí va el script de interactividad que ya se había creado --></body>
+<body class="bg-black text-white flex flex-col items-center justify-center min-h-screen p-4">
+  <h1 class="text-2xl md:text-4xl font-bold mb-4 text-center">Círculo Armónico Interactivo</h1>
+  <p class="text-center mb-6 max-w-xl text-sm md:text-base">
+    Haz clic en cualquier acorde para ver sus relaciones armónicas: tónica, dominante, relativa mayor o menor.
+  </p>
+
+  <!-- Contenedor SVG del círculo -->
+  <div class="w-full max-w-3xl">
+    <svg id="circleSvg" viewBox="0 0 600 600" class="w-full h-auto mx-auto">
+      <!-- Los acordes serán generados dinámicamente con JS -->
+    </svg>
+  </div>
+
+  <!-- Área de información -->
+  <div id="infoBox" class="bg-gray-900 rounded-xl mt-6 p-4 w-full max-w-xl text-center border border-gray-700">
+    <p class="text-lg font-semibold mb-2">Selecciona un acorde para ver su función.</p>
+    <div id="infoContent" class="text-sm"></div>
+  </div>
+
+  <script>
+    const chords = [
+      { label: 'C', type: 'maj' }, { label: 'G', type: 'maj' }, { label: 'D', type: 'maj' }, { label: 'A', type: 'maj' },
+      { label: 'E', type: 'maj' }, { label: 'B', type: 'maj' }, { label: 'F#', type: 'maj' }, { label: 'Db', type: 'maj' },
+      { label: 'Ab', type: 'maj' }, { label: 'Eb', type: 'maj' }, { label: 'Bb', type: 'maj' }, { label: 'F', type: 'maj' }
+    ];
+    const infoContent = document.getElementById("infoContent");
+
+    const relations = {
+      'C': { dom: 'G7', rel: 'Am', sub: 'F' },
+      'G': { dom: 'D7', rel: 'Em', sub: 'C' },
+      'D': { dom: 'A7', rel: 'Bm', sub: 'G' },
+      'A': { dom: 'E7', rel: 'F#m', sub: 'D' },
+      'E': { dom: 'B7', rel: 'G#m', sub: 'A' },
+      'B': { dom: 'F#7', rel: 'D#m', sub: 'E' },
+      'F#': { dom: 'C#7', rel: 'Ebm', sub: 'B' },
+      'Db': { dom: 'Ab7', rel: 'Bbm', sub: 'F#' },
+      'Ab': { dom: 'Eb7', rel: 'Fm', sub: 'Db' },
+      'Eb': { dom: 'Bb7', rel: 'Cm', sub: 'Ab' },
+      'Bb': { dom: 'F7', rel: 'Gm', sub: 'Eb' },
+      'F': { dom: 'C7', rel: 'Dm', sub: 'Bb' }
+    };
+
+    function renderCircle() {
+      const svg = document.getElementById("circleSvg");
+      const cx = 300, cy = 300, r = 220;
+
+      chords.forEach((chord, i) => {
+        const angle = (i / chords.length) * 2 * Math.PI - Math.PI / 2;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+
+        // Círculo de acorde
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", y);
+        circle.setAttribute("r", 28);
+        circle.setAttribute("fill", "#1f2937");
+        circle.setAttribute("stroke", "#ffffff");
+        circle.setAttribute("stroke-width", "2");
+        circle.classList.add("chord");
+        circle.dataset.label = chord.label;
+        svg.appendChild(circle);
+
+        // Texto del acorde
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", x);
+        text.setAttribute("y", y + 5);
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("font-size", "16");
+        text.setAttribute("fill", "#fff");
+        text.style.fontWeight = "bold";
+        text.textContent = chord.label;
+        text.classList.add("pointer-events-none");
+        svg.appendChild(text);
+
+        circle.addEventListener("click", () => showInfo(chord.label));
+      });
+    }
+
+    function showInfo(label) {
+      const r = relations[label];
+      if (!r) {
+        infoContent.innerHTML = `<p>No hay datos para ${label}</p>`;
+        return;
+      }
+      infoContent.innerHTML = `
+        <p><strong>Tónica:</strong> ${label}</p>
+        <p><strong>Dominante (V7):</strong> ${r.dom}</p>
+        <p><strong>Relativa menor:</strong> ${r.rel}</p>
+        <p><strong>Subdominante:</strong> ${r.sub}</p>
+      `;
+    }
+
+    renderCircle();
+  </script>
+</body>
 </html>
