@@ -30,10 +30,14 @@
 <body>
   <div class="text-center py-6">
     <h1 class="text-4xl font-bold mb-2">Mapa Interactivo de Funciones Armónicas</h1>
-    <p class="text-lg text-slate-300">Explora las conexiones entre acordes en un círculo macro visual. Haz clic en un acorde para enfocarlo.</p>
+    <p class="text-lg text-slate-300">Explora las conexiones entre acordes en un círculo macro visual. Haz clic en un acorde para enfocarlo y reproducirlo.</p>
   </div>
   <div class="flex justify-center">
     <svg id="network" viewBox="0 0 600 600" width="600" height="600"></svg>
+  </div>
+  <div class="text-center mt-4">
+    <button onclick="reproducirProgresion()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Reproducir Progresión</button>
+    <div id="progresion" class="mt-2 text-slate-300"></div>
   </div>  <script>
     const svg = document.getElementById("network");
     const center = 300;
@@ -45,21 +49,29 @@
       { name: "Eb", type: "maj" }, { name: "Bb", type: "maj" }, { name: "F", type: "maj" }
     ];
 
-    const relations = [
+    const relaciones = [
       ["C", "G"], ["C", "F"], ["C", "Am"], ["C", "G7"],
       ["G", "D"], ["D", "A"], ["A", "E"], ["E", "B"], ["B", "F#"],
       ["F#", "Db"], ["Db", "Ab"], ["Ab", "Eb"], ["Eb", "Bb"], ["Bb", "F"],
       ["F", "C"]
     ];
 
+    const notasFrecuencia = {
+      'C': 261.63, 'C#': 277.18, 'Db': 277.18, 'D': 293.66, 'Eb': 311.13, 'E': 329.63,
+      'F': 349.23, 'F#': 369.99, 'Gb': 369.99, 'G': 392.00, 'Ab': 415.30,
+      'A': 440.00, 'Bb': 466.16, 'B': 493.88
+    };
+
+    const progresion = [];
+
     const angleStep = (2 * Math.PI) / chords.length;
-    const positions = {};
+    const posiciones = {};
 
     chords.forEach((chord, i) => {
       const angle = angleStep * i - Math.PI / 2;
       const x = center + radius * Math.cos(angle);
       const y = center + radius * Math.sin(angle);
-      positions[chord.name] = { x, y };
+      posiciones[chord.name] = { x, y };
 
       const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.setAttribute("class", "chord-group");
@@ -69,16 +81,20 @@
         <text x="0" y="5" text-anchor="middle" fill="white" font-size="16" font-family="sans-serif">${chord.name}</text>
       `;
       g.style.cursor = "pointer";
-      g.onclick = () => enfocar(chord.name);
+      g.onclick = () => {
+        enfocar(chord.name);
+        reproducirNota(chord.name);
+        agregarAProgresion(chord.name);
+      };
       svg.appendChild(g);
     });
 
-    relations.forEach(([a, b]) => {
+    relaciones.forEach(([a, b]) => {
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", positions[a].x);
-      line.setAttribute("y1", positions[a].y);
-      line.setAttribute("x2", positions[b].x);
-      line.setAttribute("y2", positions[b].y);
+      line.setAttribute("x1", posiciones[a].x);
+      line.setAttribute("y1", posiciones[a].y);
+      line.setAttribute("x2", posiciones[b].x);
+      line.setAttribute("y2", posiciones[b].y);
       line.setAttribute("class", "line");
       svg.insertBefore(line, svg.firstChild);
     });
@@ -89,11 +105,39 @@
         const txt = g.querySelector("text").textContent;
         if (txt === nombre) {
           g.classList.add("focus");
-          g.setAttribute("transform", `translate(${positions[nombre].x},${positions[nombre].y}) scale(1.2)`);
+          g.setAttribute("transform", `translate(${posiciones[nombre].x},${posiciones[nombre].y}) scale(1.2)`);
         } else {
           g.classList.remove("focus");
-          g.setAttribute("transform", `translate(${positions[txt]?.x || 0},${positions[txt]?.y || 0}) scale(0.8)`);
+          g.setAttribute("transform", `translate(${posiciones[txt]?.x || 0},${posiciones[txt]?.y || 0}) scale(0.8)`);
         }
+      });
+    }
+
+    function reproducirNota(nota) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = notasFrecuencia[nota] || 440;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1);
+      o.stop(ctx.currentTime + 1);
+    }
+
+    function agregarAProgresion(nota) {
+      progresion.push(nota);
+      document.getElementById("progresion").textContent = "Progresión: " + progresion.join(" - ");
+    }
+
+    function reproducirProgresion() {
+      let delay = 0;
+      progresion.forEach((nota, i) => {
+        setTimeout(() => {
+          reproducirNota(nota);
+        }, delay);
+        delay += 1000;
       });
     }
   </script></body>
