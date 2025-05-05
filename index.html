@@ -3,32 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Estudio de Armonía - Círculo Interactivo</title>
+  <title>Círculo Armónico Interactivo</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .chord {
       transition: transform 0.2s ease;
+      cursor: pointer;
     }
     .chord:hover {
       transform: scale(1.2);
-      cursor: pointer;
     }
     .highlight {
-      stroke: lime;
+      stroke: #22c55e;
       stroke-width: 4px;
+    }
+    .arrow {
+      stroke: orange;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+    .label {
+      pointer-events: none;
+      font-weight: bold;
     }
   </style>
 </head>
 <body class="bg-black text-white flex flex-col items-center justify-center min-h-screen p-4">
   <h1 class="text-2xl md:text-4xl font-bold mb-4 text-center">Círculo Armónico Interactivo</h1>
   <p class="text-center mb-6 max-w-xl text-sm md:text-base">
-    Haz clic en cualquier acorde para ver sus relaciones armónicas: tónica, dominante, relativa mayor o menor.
+    Haz clic en cualquier acorde para ver sus relaciones y progresiones armónicas: tónica, subdominante, dominante y relativos.
   </p>
 
   <!-- Contenedor SVG del círculo -->
-  <div class="w-full max-w-3xl">
+  <div class="w-full max-w-4xl">
     <svg id="circleSvg" viewBox="0 0 600 600" class="w-full h-auto mx-auto">
-      <!-- Los acordes serán generados dinámicamente con JS -->
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="orange" />
+        </marker>
+      </defs>
     </svg>
   </div>
 
@@ -40,37 +53,35 @@
 
   <script>
     const chords = [
-      { label: 'C', type: 'maj' }, { label: 'G', type: 'maj' }, { label: 'D', type: 'maj' }, { label: 'A', type: 'maj' },
-      { label: 'E', type: 'maj' }, { label: 'B', type: 'maj' }, { label: 'F#', type: 'maj' }, { label: 'Db', type: 'maj' },
-      { label: 'Ab', type: 'maj' }, { label: 'Eb', type: 'maj' }, { label: 'Bb', type: 'maj' }, { label: 'F', type: 'maj' }
+      'C','G','D','A','E','B','F#','Db','Ab','Eb','Bb','F'
     ];
+    const svg = document.getElementById("circleSvg");
     const infoContent = document.getElementById("infoContent");
+    const cx = 300, cy = 300, r = 220;
+    let chordPositions = {};
 
     const relations = {
-      'C': { dom: 'G7', rel: 'Am', sub: 'F' },
-      'G': { dom: 'D7', rel: 'Em', sub: 'C' },
-      'D': { dom: 'A7', rel: 'Bm', sub: 'G' },
-      'A': { dom: 'E7', rel: 'F#m', sub: 'D' },
-      'E': { dom: 'B7', rel: 'G#m', sub: 'A' },
-      'B': { dom: 'F#7', rel: 'D#m', sub: 'E' },
-      'F#': { dom: 'C#7', rel: 'Ebm', sub: 'B' },
-      'Db': { dom: 'Ab7', rel: 'Bbm', sub: 'F#' },
-      'Ab': { dom: 'Eb7', rel: 'Fm', sub: 'Db' },
-      'Eb': { dom: 'Bb7', rel: 'Cm', sub: 'Ab' },
-      'Bb': { dom: 'F7', rel: 'Gm', sub: 'Eb' },
-      'F': { dom: 'C7', rel: 'Dm', sub: 'Bb' }
+      'C': { dom: 'G7', rel: 'Am', sub: 'F', prog: ['F', 'G', 'Am', 'Dm'] },
+      'G': { dom: 'D7', rel: 'Em', sub: 'C', prog: ['C', 'D', 'Em', 'Am'] },
+      'D': { dom: 'A7', rel: 'Bm', sub: 'G', prog: ['G', 'A', 'Bm', 'Em'] },
+      'A': { dom: 'E7', rel: 'F#m', sub: 'D', prog: ['D', 'E', 'F#m', 'Bm'] },
+      'E': { dom: 'B7', rel: 'G#m', sub: 'A', prog: ['A', 'B', 'C#m', 'F#m'] },
+      'B': { dom: 'F#7', rel: 'D#m', sub: 'E', prog: ['E', 'F#', 'G#m', 'C#m'] },
+      'F#': { dom: 'C#7', rel: 'Ebm', sub: 'B', prog: ['B', 'C#', 'D#m', 'G#m'] },
+      'Db': { dom: 'Ab7', rel: 'Bbm', sub: 'F#', prog: ['F#', 'Ab', 'Bbm', 'Ebm'] },
+      'Ab': { dom: 'Eb7', rel: 'Fm', sub: 'Db', prog: ['Db', 'Eb', 'Fm', 'Bbm'] },
+      'Eb': { dom: 'Bb7', rel: 'Cm', sub: 'Ab', prog: ['Ab', 'Bb', 'Cm', 'Fm'] },
+      'Bb': { dom: 'F7', rel: 'Gm', sub: 'Eb', prog: ['Eb', 'F', 'Gm', 'Cm'] },
+      'F': { dom: 'C7', rel: 'Dm', sub: 'Bb', prog: ['Bb', 'C', 'Dm', 'Gm'] }
     };
 
     function renderCircle() {
-      const svg = document.getElementById("circleSvg");
-      const cx = 300, cy = 300, r = 220;
-
-      chords.forEach((chord, i) => {
+      chords.forEach((label, i) => {
         const angle = (i / chords.length) * 2 * Math.PI - Math.PI / 2;
         const x = cx + r * Math.cos(angle);
         const y = cy + r * Math.sin(angle);
+        chordPositions[label] = { x, y };
 
-        // Círculo de acorde
         const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         circle.setAttribute("cx", x);
         circle.setAttribute("cy", y);
@@ -79,37 +90,73 @@
         circle.setAttribute("stroke", "#ffffff");
         circle.setAttribute("stroke-width", "2");
         circle.classList.add("chord");
-        circle.dataset.label = chord.label;
+        circle.dataset.label = label;
         svg.appendChild(circle);
 
-        // Texto del acorde
         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
         text.setAttribute("x", x);
         text.setAttribute("y", y + 5);
         text.setAttribute("text-anchor", "middle");
         text.setAttribute("font-size", "16");
         text.setAttribute("fill", "#fff");
-        text.style.fontWeight = "bold";
-        text.textContent = chord.label;
-        text.classList.add("pointer-events-none");
+        text.classList.add("label");
+        text.textContent = label;
         svg.appendChild(text);
 
-        circle.addEventListener("click", () => showInfo(chord.label));
+        circle.addEventListener("click", () => showRelations(label));
       });
     }
 
-    function showInfo(label) {
+    function drawArrow(from, to) {
+      const x1 = chordPositions[from]?.x, y1 = chordPositions[from]?.y;
+      const x2 = chordPositions[to]?.x, y2 = chordPositions[to]?.y;
+      if (!x1 || !x2) return;
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", x1);
+      line.setAttribute("y1", y1);
+      line.setAttribute("x2", x2);
+      line.setAttribute("y2", y2);
+      line.classList.add("arrow");
+      svg.appendChild(line);
+    }
+
+    function clearArrows() {
+      const arrows = svg.querySelectorAll(".arrow");
+      arrows.forEach(e => e.remove());
+    }
+
+    function highlightChord(label, color = "#22c55e") {
+      const circle = [...svg.querySelectorAll("circle")].find(c => c.dataset.label === label);
+      if (circle) circle.setAttribute("stroke", color);
+    }
+
+    function resetHighlights() {
+      svg.querySelectorAll("circle").forEach(c => c.setAttribute("stroke", "#ffffff"));
+    }
+
+    function showRelations(label) {
+      resetHighlights();
+      clearArrows();
       const r = relations[label];
-      if (!r) {
-        infoContent.innerHTML = `<p>No hay datos para ${label}</p>`;
-        return;
-      }
+      if (!r) return;
+
+      highlightChord(label, "#22c55e");
+      highlightChord(r.dom?.replace("7", ""), "#facc15");
+      highlightChord(r.sub, "#3b82f6");
+      highlightChord(r.rel, "#ec4899");
+
       infoContent.innerHTML = `
         <p><strong>Tónica:</strong> ${label}</p>
         <p><strong>Dominante (V7):</strong> ${r.dom}</p>
-        <p><strong>Relativa menor:</strong> ${r.rel}</p>
         <p><strong>Subdominante:</strong> ${r.sub}</p>
+        <p><strong>Relativa menor:</strong> ${r.rel}</p>
+        <p class="mt-2 text-green-400"><strong>Progresión sugerida:</strong> ${r.prog.join(' → ')}</p>
       `;
+
+      for (let i = 0; i < r.prog.length - 1; i++) {
+        drawArrow(r.prog[i], r.prog[i + 1]);
+      }
     }
 
     renderCircle();
