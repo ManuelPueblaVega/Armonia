@@ -16,39 +16,19 @@
   <div class="max-w-4xl mx-auto p-4">
     <header class="text-center mb-6">
       <h1 class="text-4xl font-bold">Explorador Armónico</h1>
-      <p class="mt-2 text-lg">Aprende progresiones armónicas desde cero con visuales, sonidos y juegos interactivos</p>
+      <p class="mt-2 text-lg">Visualiza y escucha cómo los acordes se conectan y transforman dentro del círculo de quintas.</p>
     </header><!-- Círculo de quintas interactivo -->
 <section class="bg-white shadow p-4 rounded mb-6">
   <h2 class="text-2xl font-semibold mb-2">1. Círculo de Quintas Interactivo</h2>
+  <p class="mb-2 text-gray-700">Haz clic en una tonalidad para descubrir sus funciones armónicas. Cada acorde es como un personaje en una historia musical: <strong>la tónica</strong> es el hogar, <strong>la subdominante</strong> es el viaje, y <strong>la dominante</strong> es la tensión antes de regresar.</p>
   <div id="circle" class="flex flex-wrap justify-center gap-2"></div>
-  <p class="text-sm mt-2 text-gray-600">Haz clic en una tonalidad para ver sus funciones armónicas y ejemplos.</p>
 </section>
 
-<!-- Teclado visual -->
+<!-- Visualización en Teclado -->
 <section class="bg-white shadow p-4 rounded mb-6">
-  <h2 class="text-2xl font-semibold mb-2">2. Visualización en Teclado</h2>
-  <div id="keyboard" class="flex gap-1 overflow-auto"></div>
-  <p class="text-sm mt-2 text-gray-600">Los acordes se mostrarán en el teclado. Colores: tónica (verde), subdominante (azul), dominante (rojo).</p>
-</section>
-
-<!-- Constructor de progresiones -->
-<section class="bg-white shadow p-4 rounded mb-6">
-  <h2 class="text-2xl font-semibold mb-2">3. Constructor de Progresiones</h2>
-  <div class="flex gap-2 flex-wrap mb-2" id="progression-builder"></div>
-  <button onclick="playProgression()" class="bg-blue-500 text-white px-4 py-2 rounded">Reproducir progresión</button>
-</section>
-
-<!-- Ruta de aprendizaje -->
-<section class="bg-white shadow p-4 rounded mb-6">
-  <h2 class="text-2xl font-semibold mb-2">4. Ruta de Aprendizaje</h2>
-  <ol class="list-decimal ml-4">
-    <li>Introducción a funciones armónicas con metáforas.</li>
-    <li>Progresiones básicas (I-IV-V-I).</li>
-    <li>Estilos musicales: pop, blues, flamenco, etc.</li>
-    <li>Sustituciones y acordes relativos.</li>
-    <li>Ear training: identifica la función de cada acorde.</li>
-    <li>Pizarra libre con IA para reharmonización y exportación MIDI.</li>
-  </ol>
+  <h2 class="text-2xl font-semibold mb-2">2. Visualización de Funciones Armónicas</h2>
+  <p class="mb-4 text-gray-700">Haz clic sobre un acorde para escucharlo y entender su papel dentro de la tonalidad. Colores: <span class="font-bold text-green-600">Tónica (descanso)</span>, <span class="font-bold text-blue-600">Subdominante (transición)</span>, <span class="font-bold text-red-600">Dominante (tensión)</span>.</p>
+  <div id="keyboard" class="flex gap-2 flex-wrap justify-center"></div>
 </section>
 
   </div>  <script>
@@ -56,13 +36,28 @@
     const funciones = {
       'C': { tónica: 'C', subdominante: 'F', dominante: 'G' },
       'G': { tónica: 'G', subdominante: 'C', dominante: 'D' },
-      // Se puede completar para otras tonalidades
+      'D': { tónica: 'D', subdominante: 'G', dominante: 'A' },
+      'A': { tónica: 'A', subdominante: 'D', dominante: 'E' },
+      'E': { tónica: 'E', subdominante: 'A', dominante: 'B' },
+      'B': { tónica: 'B', subdominante: 'E', dominante: 'F#' },
+      'F#': { tónica: 'F#', subdominante: 'B', dominante: 'C#' },
+      'Db': { tónica: 'Db', subdominante: 'Gb', dominante: 'Ab' },
+      'Ab': { tónica: 'Ab', subdominante: 'Db', dominante: 'Eb' },
+      'Eb': { tónica: 'Eb', subdominante: 'Ab', dominante: 'Bb' },
+      'Bb': { tónica: 'Bb', subdominante: 'Eb', dominante: 'F' },
+      'F': { tónica: 'F', subdominante: 'Bb', dominante: 'C' }
+    };
+
+    const notasFrecuencia = {
+      'C': 261.63, 'C#': 277.18, 'Db': 277.18, 'D': 293.66, 'Eb': 311.13, 'E': 329.63,
+      'F': 349.23, 'F#': 369.99, 'Gb': 369.99, 'G': 392.00, 'Ab': 415.30,
+      'A': 440.00, 'Bb': 466.16, 'B': 493.88
     };
 
     tonalidades.forEach(tone => {
       const btn = document.createElement('button');
       btn.textContent = tone;
-      btn.className = 'note p-2 rounded shadow bg-yellow-100';
+      btn.className = 'note p-3 rounded-full shadow bg-yellow-100 text-lg font-bold';
       btn.onclick = () => mostrarFuncion(tone);
       document.getElementById('circle').appendChild(btn);
     });
@@ -73,26 +68,26 @@
       const f = funciones[tone];
       if (!f) return;
 
-      ['tónica', 'subdominante', 'dominante'].forEach(fn => {
+      Object.entries(f).forEach(([fn, nota]) => {
         const div = document.createElement('div');
-        div.textContent = f[fn];
-        div.className = fn + ' px-4 py-2 rounded text-white';
-        div.onclick = () => agregarAcorde(f[fn]);
+        div.textContent = `${nota} (${fn})`;
+        div.className = fn + ' px-4 py-2 rounded text-white shadow text-lg hover:scale-105 cursor-pointer';
+        div.onclick = () => reproducirNota(nota);
         keyboard.appendChild(div);
       });
     }
 
-    function agregarAcorde(acorde) {
-      const cont = document.getElementById('progression-builder');
-      const span = document.createElement('span');
-      span.textContent = acorde;
-      span.className = 'px-3 py-1 bg-gray-200 rounded';
-      cont.appendChild(span);
-    }
-
-    function playProgression() {
-      const acordes = Array.from(document.querySelectorAll('#progression-builder span')).map(e => e.textContent);
-      alert('Reproduciendo: ' + acordes.join(' - ')); // Aquí se puede integrar MIDI o Web Audio
+    function reproducirNota(nota) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = notasFrecuencia[nota] || 440;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 1);
+      o.stop(ctx.currentTime + 1);
     }
   </script></body>
 </html>
