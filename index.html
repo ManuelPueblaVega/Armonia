@@ -1,113 +1,146 @@
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa Armónico Visual</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instrumento Musical Touch</title>
+  <link rel="manifest" href="manifest.json">
   <style>
-    body { background-color: #0f172a; color: white; }
-    .line { stroke: #94a3b8; stroke-width: 1.2; opacity: 0.6; marker-end: url(#arrow); }
-    .circle-maj { fill: #be123c; }
-    .circle-dom { fill: #facc15; }
-    .circle-min { fill: #0891b2; }
-    .chord:hover circle { stroke: #f0f9ff; stroke-width: 3; }
-    .chord text { font-size: 12px; font-family: sans-serif; fill: white; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: #111;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div class="text-center py-6">
-    <h1 class="text-3xl font-bold mb-2">Mapa Armónico Visual</h1>
-    <p class="text-slate-300 max-w-xl mx-auto">Haz clic en cualquier acorde para ver su red de relaciones armónicas: relativos menores, dominantes secundarios y tónicas relacionadas.</p>
-  </div>
-  <div class="flex justify-center">
-    <svg id="circleNetwork" viewBox="0 0 800 800" width="800" height="800"></svg>
-  </div>  <script>
-    const svg = document.getElementById("circleNetwork");
-    const center = 400;
-    const outerRadius = 300;
-    const innerRadius = 220;
-    const chordsOuter = ["Cm", "Gm", "Dm", "Am", "Em", "Bm", "F#m", "C#m", "G#m", "Ebm", "Bbm", "Fm"];
-    const chordsInner = ["C", "G", "D", "A", "E", "B", "F#", "C#7", "F#7", "B7", "E7", "A7"];
-
-    const relationships = [
-      ["Cm", "G7"], ["Fm", "C7"], ["Bbm", "F7"], ["Ebm", "Bb7"], ["Abm", "Eb7"],
-      ["Dbm", "Ab7"], ["F#m", "C#7"], ["Bm", "F#7"], ["Em", "B7"], ["Am", "E7"], ["Dm", "A7"],
-      ["Gm", "D7"], ["C", "G7"], ["C", "Am"], ["C", "F"],
-      ["G", "Em"], ["G", "C"], ["D", "Bm"], ["A", "F#m"], ["E", "C#m"],
-      ["B", "G#m"], ["F#", "D#m"], ["Db", "Bbm"], ["Ab", "Fm"], ["Eb", "Cm"], ["Bb", "Gm"], ["F", "Dm"]
-    ];
-
-    const posiciones = {};
-
-    const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-    marker.setAttribute("id", "arrow");
-    marker.setAttribute("viewBox", "0 0 10 10");
-    marker.setAttribute("refX", "5");
-    marker.setAttribute("refY", "5");
-    marker.setAttribute("markerWidth", "5");
-    marker.setAttribute("markerHeight", "5");
-    marker.setAttribute("orient", "auto-start-reverse");
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
-    path.setAttribute("fill", "#94a3b8");
-    marker.appendChild(path);
-    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    defs.appendChild(marker);
-    svg.appendChild(defs);
-
-    function crearAcordes(lista, radio, clase) {
-      lista.forEach((acorde, i) => {
-        const angle = ((2 * Math.PI) / 12) * i - Math.PI / 2;
-        const x = center + radio * Math.cos(angle);
-        const y = center + radio * Math.sin(angle);
-        posiciones[acorde] = { x, y };
-
-        const grupo = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        grupo.setAttribute("class", "chord");
-        grupo.setAttribute("transform", `translate(${x},${y})`);
-        grupo.innerHTML = `
-          <circle r="20" class="${clase}" stroke="white" stroke-width="1.5" />
-          <text text-anchor="middle" y="5">${acorde}</text>
-        `;
-        grupo.onclick = () => resaltarRelaciones(acorde);
-        svg.appendChild(grupo);
-      });
-    }
-
-    function dibujarFlechas() {
-      relationships.forEach(([a, b]) => {
-        if (posiciones[a] && posiciones[b]) {
-          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          line.setAttribute("x1", posiciones[a].x);
-          line.setAttribute("y1", posiciones[a].y);
-          line.setAttribute("x2", posiciones[b].x);
-          line.setAttribute("y2", posiciones[b].y);
-          line.setAttribute("class", "line");
-          svg.insertBefore(line, svg.firstChild);
-        }
-      });
-    }
-
-    function resaltarRelaciones(base) {
-      const all = svg.querySelectorAll(".chord circle");
-      all.forEach(c => c.setAttribute("stroke", "white"));
-
-      relationships.forEach(([a, b]) => {
-        if (a === base) {
-          const related = svg.querySelectorAll(`.chord text`);
-          related.forEach(t => {
-            if (t.textContent === b) {
-              const circle = t.parentElement.querySelector("circle");
-              circle.setAttribute("stroke", "#0ea5e9");
-              circle.setAttribute("stroke-width", "3");
-            }
+  <canvas id="touchCanvas"></canvas>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registrado con éxito:', registration.scope);
+          })
+          .catch(error => {
+            console.log('Error al registrar ServiceWorker:', error);
           });
-        }
       });
     }
+  </script>
+  <script>
+    const canvas = document.getElementById('touchCanvas');
+    const ctx = canvas.getContext('2d');
+    let touches = {};
 
-    crearAcordes(chordsInner, innerRadius, "circle-dom");
-    crearAcordes(chordsOuter, outerRadius, "circle-min");
-    dibujarFlechas();
-  </script></body>
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function createOscillator(freq) {
+      const osc = audioCtx.createOscillator();
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      return { osc, gain };
+    }
+
+    function frequencyFromPosition(y) {
+      const minFreq = 200;
+      const maxFreq = 1000;
+      const percent = 1 - (y / canvas.height);
+      return minFreq + percent * (maxFreq - minFreq);
+    }
+
+    function drawTouches() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let id in touches) {
+        const t = touches[id];
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 40, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.fill();
+      }
+    }
+
+    function getOrientationMode() {
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (event) => {
+          window.orientationZ = event.gamma || 0;
+        });
+      }
+    }
+    getOrientationMode();
+
+    function isMajor() {
+      return (window.orientationZ || 0) >= 0;
+    }
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      for (let touch of e.changedTouches) {
+        const freq = frequencyFromPosition(touch.clientY);
+        const baseOsc = createOscillator(freq);
+        let oscs = [baseOsc];
+
+        if (e.touches.length === 2) {
+          const third = createOscillator(freq * Math.pow(2, 4/12));
+          oscs.push(third);
+        } else if (e.touches.length >= 3) {
+          const interval = isMajor() ? [4, 7] : [3, 7];
+          oscs.push(createOscillator(freq * Math.pow(2, interval[0]/12)));
+          oscs.push(createOscillator(freq * Math.pow(2, interval[1]/12)));
+        }
+
+        touches[touch.identifier] = {
+          x: touch.clientX,
+          y: touch.clientY,
+          oscs
+        };
+      }
+      drawTouches();
+    }, false);
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      for (let touch of e.changedTouches) {
+        if (touches[touch.identifier]) {
+          touches[touch.identifier].x = touch.clientX;
+          touches[touch.identifier].y = touch.clientY;
+          const freq = frequencyFromPosition(touch.clientY);
+          touches[touch.identifier].oscs[0].osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        }
+      }
+      drawTouches();
+    }, false);
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      for (let touch of e.changedTouches) {
+        if (touches[touch.identifier]) {
+          touches[touch.identifier].oscs.forEach(({ osc, gain }) => {
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc.stop(audioCtx.currentTime + 0.5);
+          });
+          delete touches[touch.identifier];
+        }
+      }
+      drawTouches();
+    }, false);
+  </script>
+</body>
 </html>
